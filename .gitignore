@@ -1,0 +1,34 @@
+# Xcode / iOS
+.DS_Store
+xcuserdata/
+*.xcuserstate
+*.xcworkspace
+DerivedData/
+build/
+*.ipa
+
+# Swift Package Manager
+/.build/
+/Packages/
+/Package.resolved
+
+# CocoaPods
+/Pods/
+
+# Carthage
+/Carthage/Build/
+
+# WebAPI (ASP.NET Core)
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Secrets
+appsettings.Development.json
+.env
+
+# Logs
+*.log
