@@ -16,37 +16,56 @@ class AuthViewModel: ObservableObject {
     private let authService = AuthService()
     
     var isFormValid: Bool {
-        
-        !email.isEmpty && !password.isEmpty && isValidEmail(email)
+        do {
+            try ValidationUtils.validateEmail(email)
+            try ValidationUtils.validatePassword(password)
+            return true
+        } catch {
+            return false
+        }
     }
     
     var isRegistrationFormValid: Bool {
-        
-        isFormValid && !firstName.isEmpty && !lastName.isEmpty &&
-        password == confirmPassword && password.count >= 6
+        do {
+            try ValidationUtils.validateEmail(email)
+            try ValidationUtils.validateName(firstName, fieldName: "First name")
+            try ValidationUtils.validateName(lastName, fieldName: "Last name")
+            try ValidationUtils.validatePasswordConfirmation(password, confirmPassword)
+            return true
+        } catch {
+            return false
+        }
     }
     
     func login() async {
-        
         await MainActor.run {
-            
             isLoading = true
             errorMessage = ""
             showError = false
         }
         
+        // Validate input first
         do {
-            
+            try ValidationUtils.validateEmail(email)
+            try ValidationUtils.validatePassword(password)
+        } catch {
+            await MainActor.run {
+                isLoading = false
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+            return
+        }
+        
+        // Proceed with API call
+        do {
             try await authService.login(email: email, password: password)
-            
             await MainActor.run {
                 isLoading = false
                 clearForm()
             }
         } catch {
-            
             await MainActor.run {
-                
                 isLoading = false
                 errorMessage = error.localizedDescription
                 showError = true
@@ -55,26 +74,36 @@ class AuthViewModel: ObservableObject {
     }
     
     func register() async {
-        
         await MainActor.run {
-            
             isLoading = true
             errorMessage = ""
             showError = false
         }
         
+        // Validate input first
+        do {
+            try ValidationUtils.validateEmail(email)
+            try ValidationUtils.validateName(firstName, fieldName: "First name")
+            try ValidationUtils.validateName(lastName, fieldName: "Last name")
+            try ValidationUtils.validatePasswordConfirmation(password, confirmPassword)
+        } catch {
+            await MainActor.run {
+                isLoading = false
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+            return
+        }
+        
+        // Proceed with API call
         do {
             try await authService.register(firstName: firstName, lastName: lastName, email: email, password: password)
-            
             await MainActor.run {
-                
                 isLoading = false
                 clearForm()
             }
         } catch {
-            
             await MainActor.run {
-                
                 isLoading = false
                 errorMessage = error.localizedDescription
                 showError = true
@@ -83,19 +112,10 @@ class AuthViewModel: ObservableObject {
     }
     
     private func clearForm() {
-        
         email = ""
         password = ""
         firstName = ""
         lastName = ""
         confirmPassword = ""
-    }
-    
-    private func isValidEmail(_ email: String) -> Bool {
-        
-        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
-        
-        return emailPred.evaluate(with: email)
     }
 }

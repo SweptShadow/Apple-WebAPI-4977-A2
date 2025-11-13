@@ -27,13 +27,13 @@ struct ProfileView: View {
                 }
                 .padding(.top, 20)
                 
-                // User Information
+                // User Info
                 VStack(spacing: 16) {
                     if let user = authService.currentUser {
                         ProfileInfoRow(title: "Full Name", value: user.fullName)
                         ProfileInfoRow(title: "Email", value: user.email)
-                        ProfileInfoRow(title: "Account Created", value: ValidationUtils.formatDate(user.accountCreationDate))
-                        ProfileInfoRow(title: "Last Login", value: ValidationUtils.formatDate(user.lastLoginDate))
+                        ProfileInfoRow(title: "Account Created", value: ValidationUtils.formatDate(user.createdAt))
+                        ProfileInfoRow(title: "Last Login", value: ValidationUtils.formatDate(user.lastLogin))
                     }
                 }
                 .padding(.horizontal, 20)

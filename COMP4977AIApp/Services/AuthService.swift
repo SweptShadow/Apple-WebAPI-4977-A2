@@ -26,37 +26,55 @@ class AuthService: ObservableObject {
     }
     
     func register(firstName: String, lastName: String, email: String, password: String) async throws {
+        let registration = UserRegistration(
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            passwordHash: password
+        )
         
-        // TODO: Implement registration API call
-        // placeholder for registration logic
-        let registration = UserRegistration(firstName: firstName, lastName: lastName, email: email, password: password)
-        
-        // TODO: Make actual API call to register endpoint?
-        // let response = try await networkService.performRequest(request, responseType: AuthResponse.self)
-        
-        // For now, simulate success
-        print("Registration attempted for: \(email)")
+        do {
+            let message = try await networkService.register(user: registration)
+            print("Registration successful: \(message)")
+        } catch {
+            print("Registration failed: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     func login(email: String, password: String) async throws {
+        let loginData = UserLogin(email: email, passwordHash: password)
         
-        // TODO: Implement login API call
-        let loginData = UserLogin(email: email, password: password)
-        
-        // TODO: Make actual API call to login endpoint
-        // let response = try await networkService.performRequest(request, responseType: AuthResponse.self)
-        
-        // For now, simulate success
-        await MainActor.run {
+        do {
+            let response = try await networkService.login(credentials: loginData)
             
-            self.isAuthenticated = true
+            await MainActor.run {
+                self.isAuthenticated = true
+                self.authToken = response.token
+                
+                // Convert backend user data to local User model
+                self.currentUser = User(
+                    id: response.user.id,
+                    firstName: response.user.firstName,
+                    lastName: response.user.lastName,
+                    email: response.user.email,
+                    createdAt: parseDate(response.user.createdAt) ?? Date(),
+                    lastLogin: parseDate(response.user.lastLogin) ?? Date()
+                )
+                
+                // Store token securely
+                UserDefaults.standard.set(response.token, forKey: "auth_token")
+            }
             
-            // TODO: Set actual user data from API response
-            self.currentUser = User(firstName: "Test", lastName: "User", email: email)
-            self.authToken = "mock_token"
-            
-            UserDefaults.standard.set("mock_token", forKey: "auth_token")
+        } catch {
+            print("Login failed: \(error.localizedDescription)")
+            throw error
         }
+    }
+    
+    private func parseDate(_ dateString: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        return formatter.date(from: dateString)
     }
     
     func logout() {

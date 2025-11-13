@@ -5,10 +5,53 @@ class NetworkService: ObservableObject {
     
     static let shared = NetworkService()
     
-    // TODO: Update with your actual WebAPI base URL
-    private let baseURL = "https://your-webapi-url.azurewebsites.net/api"
+    // MARK: - Configuration
+    private var baseURL: String {
+        // For local development
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return "http://localhost:5158/api" // HTTP for easier development
+        }
+        
+        // For production/Azure deployment - update URL when we deploy
+        #if DEBUG
+        return "http://localhost:5158/api" // Local development - HTTP port from launchSettings
+        #else
+        return "https://your-backend.azurewebsites.net/api" // Production
+        #endif
+    }
     
     private init() {}
+    
+    // MARK: - Authentication Methods
+    
+    func register(user: UserRegistration) async throws -> String {
+        guard let request = createRequest(for: "auth/register", method: "POST", body: try JSONEncoder().encode(user)) else {
+            throw NetworkError.invalidURL
+        }
+        
+        let response: RegistrationResponse = try await performRequest(request, responseType: RegistrationResponse.self)
+        return response.message
+    }
+    
+    func login(credentials: UserLogin) async throws -> AuthResponse {
+        guard let request = createRequest(for: "auth/login", method: "POST", body: try JSONEncoder().encode(credentials)) else {
+            throw NetworkError.invalidURL
+        }
+        
+        return try await performRequest(request, responseType: AuthResponse.self)
+    }
+    
+    func sendAIPrompt(prompt: String, token: String) async throws -> AIResponse {
+        let promptData = ["prompt": prompt]
+        guard let body = try? JSONEncoder().encode(promptData),
+              let request = createRequest(for: "ai/prompt", method: "POST", body: body, token: token) else {
+            throw NetworkError.invalidURL
+        }
+        
+        return try await performRequest(request, responseType: AIResponse.self)
+    }
+    
+    // MARK: - Private Methods
     
     private func createRequest(for endpoint: String, method: String = "GET", body: Data? = nil, token: String? = nil) -> URLRequest? {
         
@@ -56,27 +99,42 @@ class NetworkService: ObservableObject {
 }
 
 enum NetworkError: LocalizedError {
-    
     case invalidURL
     case invalidResponse
     case serverError(Int)
     case decodingError(Error)
+    case authenticationFailed
     
     var errorDescription: String? {
-        
         switch self {
-            
         case .invalidURL:
             return "Invalid URL"
-            
         case .invalidResponse:
             return "Invalid response"
-            
         case .serverError(let code):
             return "Server error with code: \(code)"
-            
         case .decodingError(let error):
             return "Decoding error: \(error.localizedDescription)"
+        case .authenticationFailed:
+            return "Authentication failed"
         }
+    }
+}
+
+// MARK: - Response Models
+
+struct RegistrationResponse: Codable {
+    let message: String
+}
+
+struct AIResponse: Codable {
+    let response: String
+    let model: String?
+    let domain: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case response = "Response"
+        case model = "Model"
+        case domain = "Domain"
     }
 }

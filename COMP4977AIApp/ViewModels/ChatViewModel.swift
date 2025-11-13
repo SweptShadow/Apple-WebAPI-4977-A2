@@ -10,38 +10,40 @@ class ChatViewModel: ObservableObject {
     private let aiService = AIService()
     
     func sendMessage() async {
-        
         guard !currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        // Get auth token from UserDefaults
+        guard let authToken = UserDefaults.standard.string(forKey: "auth_token") else {
+            await showErrorMessage("Please login to use AI chat")
+            return
+        }
         
         let userMessage = ChatMessage(content: currentMessage, isFromUser: true)
         
         await MainActor.run {
-            
             messages.append(userMessage)
             currentMessage = ""
             isLoading = true
         }
         
         do {
-            
-            // TODO: Get actual auth token from AuthService
-            let response = try await aiService.sendMessage(userMessage.content, token: "mock_token")
+            let response = try await aiService.sendMessage(userMessage.content, token: authToken)
             let aiMessage = ChatMessage(content: response, isFromUser: false)
             
             await MainActor.run {
-                
                 messages.append(aiMessage)
                 isLoading = false
             }
         } catch {
-            
-            let errorMessage = ChatMessage(content: "Sorry, I couldn't process your request. Please try again.", isFromUser: false)
-            
-            await MainActor.run {
-                
-                messages.append(errorMessage)
-                isLoading = false
-            }
+            await showErrorMessage("Sorry, I couldn't process your request. Please try again.")
+        }
+    }
+    
+    private func showErrorMessage(_ message: String) async {
+        let errorMessage = ChatMessage(content: message, isFromUser: false)
+        await MainActor.run {
+            messages.append(errorMessage)
+            isLoading = false
         }
     }
     

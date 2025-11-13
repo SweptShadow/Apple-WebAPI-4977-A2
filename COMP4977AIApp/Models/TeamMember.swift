@@ -14,13 +14,12 @@ struct TeamMember: Identifiable {
     }
 }
 
-// TODO: Update with id
+// MARK: - Team Members Data
 extension TeamMember {
     
     static let teamMembers = [
-        
         TeamMember(name: "Dalraj Bains", bcitId: "A01384780"),
-        TeamMember(name: "Evan Vink", bcitId: "A0"),
+        TeamMember(name: "Evan Vink", bcitId: "A01381720"),
         TeamMember(name: "Shayan Nikpour", bcitId: "A0")
     ]
 }
