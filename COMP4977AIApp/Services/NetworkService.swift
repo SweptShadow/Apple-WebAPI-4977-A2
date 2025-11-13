@@ -12,11 +12,11 @@ class NetworkService: ObservableObject {
             return "http://localhost:5158/api" // HTTP for easier development
         }
         
-        // For production/Azure deployment - update URL when we deploy
+        // For production/Azure deployment
         #if DEBUG
         return "http://localhost:5158/api" // Local development - HTTP port from launchSettings
         #else
-        return "https://your-backend.azurewebsites.net/api" // Production
+        return "https://comp4977-assignment2-api.azurewebsites.net/api" // Azure production
         #endif
     }
     
