@@ -102,7 +102,7 @@ struct ChatBubbleView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(message.content)
+                    Text(markdownToAttributedString(message.content))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(AppColors.aiMessageBackground)
@@ -118,6 +118,17 @@ struct ChatBubbleView: View {
             }
         }
         .padding(.horizontal)
+    }
+}
+
+// Helper function to convert simple markdown to AttributedString
+func markdownToAttributedString(_ text: String) -> AttributedString {
+    do {
+        // SwiftUI supports markdown natively in iOS 15+
+        return try AttributedString(markdown: text)
+    } catch {
+        // Fallback to plain text if markdown parsing fails
+        return AttributedString(text)
     }
 }
 
