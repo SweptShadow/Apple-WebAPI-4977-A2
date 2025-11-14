@@ -9,15 +9,11 @@ class NetworkService: ObservableObject {
     private var baseURL: String {
         // For local development
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return "http://localhost:5158/api" // HTTP for easier development
+            return "https://comp4977-assignment2-api.azurewebsites.net/api" // Use Azure for previews
         }
         
-        // For production/Azure deployment
-        #if DEBUG
-        return "http://localhost:5158/api" // Local development - HTTP port from launchSettings
-        #else
-        return "https://comp4977-assignment2-api.azurewebsites.net/api" // Azure production
-        #endif
+        // Use Azure backend for both DEBUG and RELEASE since backend is on different machine
+        return "https://comp4977-assignment2-api.azurewebsites.net/api"
     }
     
     private init() {}
