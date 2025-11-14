@@ -23,8 +23,12 @@ class ChatViewModel: ObservableObject {
         await MainActor.run {
             messages.append(userMessage)
             print("[DEBUG] ChatViewModel: Clearing currentMessage text field")
-            currentMessage = ""
             isLoading = true
+        }
+        
+        // Clear the text field after a small delay to ensure UI update
+        await MainActor.run {
+            currentMessage = ""
         }
         
         do {

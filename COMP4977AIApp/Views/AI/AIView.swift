@@ -3,6 +3,7 @@ import SwiftUI
 struct AIView: View {
     
     @StateObject private var chatViewModel = ChatViewModel()
+    @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
         
@@ -47,10 +48,21 @@ struct AIView: View {
                     TextField("Ask me anything...", text: $chatViewModel.currentMessage, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(1...4)
+                        .focused($isTextFieldFocused)
+                        .onSubmit {
+                            if !chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Task {
+                                    await chatViewModel.sendMessage()
+                                }
+                            }
+                        }
                     
                     Button(action: {
-                        Task {
-                            await chatViewModel.sendMessage()
+                        if !chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Task {
+                                await chatViewModel.sendMessage()
+                                isTextFieldFocused = true // Refocus after sending
+                            }
                         }
                     }) {
                         Image(systemName: "paperplane.fill")
@@ -124,8 +136,12 @@ struct ChatBubbleView: View {
 // Helper function to convert simple markdown to AttributedString
 func markdownToAttributedString(_ text: String) -> AttributedString {
     do {
+        // Configure markdown options to preserve spacing and formatting
+        var options = AttributedString.MarkdownParsingOptions()
+        options.interpretedSyntax = .inlineOnlyPreservingWhitespace
+        
         // SwiftUI supports markdown natively in iOS 15+
-        return try AttributedString(markdown: text)
+        return try AttributedString(markdown: text, options: options)
     } catch {
         // Fallback to plain text if markdown parsing fails
         return AttributedString(text)
