@@ -16,6 +16,7 @@ class AuthViewModel: ObservableObject {
     var authService: AuthService?
     
     func setAuthService(_ service: AuthService) {
+        print("[DEBUG] AuthViewModel: setAuthService called with \(Unmanaged.passUnretained(service).toOpaque())")
         self.authService = service
     }
     
@@ -63,19 +64,19 @@ class AuthViewModel: ObservableObject {
         
         // Proceed with API call
         do {
-            print("🔐 Attempting login with email: \(email)")
+            print("[DEBUG] Attempting login with email: \(email)")
             guard let authService = authService else {
                 throw NetworkError.authenticationFailed
             }
             try await authService.login(email: email, password: password)
-            print("✅ Login successful!")
+            print("[DEBUG] Login successful!")
             await MainActor.run {
                 isLoading = false
                 clearForm()
             }
         } catch {
-            print("❌ Login failed with error: \(error)")
-            print("❌ Error description: \(error.localizedDescription)")
+            print("[ERROR] Login failed with error: \(error)")
+            print("[ERROR] Error description: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading = false
                 errorMessage = error.localizedDescription

@@ -10,7 +10,7 @@ class AuthService: ObservableObject {
     private let networkService = NetworkService.shared
     
     init() {
-        
+        print("[DEBUG] AuthService init: \(Unmanaged.passUnretained(self).toOpaque())")
         // Check if user is already logged in
         checkAuthStatus()
     }
@@ -43,18 +43,18 @@ class AuthService: ObservableObject {
     }
     
     func login(email: String, password: String) async throws {
-        print("[debug] AuthService: Starting login for \(email)")
+        print("[DEBUG] AuthService: Starting login for \(email)")
         let loginData = UserLogin(email: email, passwordHash: password)
         
         do {
-            print("[debug] AuthService: Calling network service...")
+            print("[DEBUG] AuthService: Calling network service...")
             let response = try await networkService.login(credentials: loginData)
-            print("[debug] AuthService: Received response, token: \(String(response.token.prefix(20)))...")
+            print("[DEBUG] AuthService: Received response, token: \(String(response.token.prefix(20)))...")
+            print("[DEBUG] AuthService login instance: \(Unmanaged.passUnretained(self).toOpaque())")
             
             await MainActor.run {
-                self.isAuthenticated = true
+                print("[DEBUG] AuthService: Setting authentication state...")
                 self.authToken = response.token
-                print("[debug] AuthService: Set isAuthenticated = true")
                 
                 // Convert backend user data to local User model
                 self.currentUser = User(
@@ -68,13 +68,18 @@ class AuthService: ObservableObject {
                 
                 // Store token securely
                 UserDefaults.standard.set(response.token, forKey: "auth_token")
-                print("[debug] AuthService: Login completed successfully")
+                print("[DEBUG] AuthService: User and token set, now setting isAuthenticated...")
+                
+                // Set this last to trigger UI update
+                self.isAuthenticated = true
+                print("[DEBUG] AuthService: isAuthenticated set to \(self.isAuthenticated)")
+                print("[DEBUG] AuthService: Login completed successfully, user: \(self.currentUser?.fullName ?? "unknown")")
             }
             
         } catch {
-            print("[debug] AuthService login failed: \(error.localizedDescription)")
+            print("[ERROR] AuthService login failed: \(error.localizedDescription)")
             if let networkError = error as? NetworkError {
-                print("[debug] Network error details: \(networkError)")
+                print("[ERROR] Network error details: \(networkError)")
             }
             throw error
         }
