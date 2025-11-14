@@ -78,6 +78,9 @@ struct LoginView: View {
                     .environmentObject(authService)
             }
         }
+        .onAppear {
+            viewModel.setAuthService(authService)
+        }
     }
 }
 

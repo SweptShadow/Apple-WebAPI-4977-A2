@@ -13,7 +13,11 @@ class AuthViewModel: ObservableObject {
     @Published var errorMessage = ""
     @Published var showError = false
     
-    private let authService = AuthService()
+    var authService: AuthService?
+    
+    func setAuthService(_ service: AuthService) {
+        self.authService = service
+    }
     
     var isFormValid: Bool {
         do {
@@ -59,16 +63,19 @@ class AuthViewModel: ObservableObject {
         
         // Proceed with API call
         do {
-            print("[debug] Attempting login with email: \(email)")
+            print("🔐 Attempting login with email: \(email)")
+            guard let authService = authService else {
+                throw NetworkError.authenticationFailed
+            }
             try await authService.login(email: email, password: password)
-            print("[debug] Login successful!")
+            print("✅ Login successful!")
             await MainActor.run {
                 isLoading = false
                 clearForm()
             }
         } catch {
-            print("[debug] Login failed with error: \(error)")
-            print("[debug] Error description: \(error.localizedDescription)")
+            print("❌ Login failed with error: \(error)")
+            print("❌ Error description: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading = false
                 errorMessage = error.localizedDescription
@@ -101,6 +108,9 @@ class AuthViewModel: ObservableObject {
         
         // Proceed with API call
         do {
+            guard let authService = authService else {
+                throw NetworkError.authenticationFailed
+            }
             try await authService.register(firstName: firstName, lastName: lastName, email: email, password: password)
             await MainActor.run {
                 isLoading = false
