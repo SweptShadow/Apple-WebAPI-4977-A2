@@ -38,8 +38,8 @@ class NetworkService: ObservableObject {
     }
     
     func sendAIPrompt(prompt: String, token: String) async throws -> AIResponse {
-        let promptData = ["prompt": prompt]
-        guard let body = try? JSONEncoder().encode(promptData),
+        // Backend expects a raw JSON string, not an object with "prompt" key
+        guard let body = try? JSONEncoder().encode(prompt),
               let request = createRequest(for: "ai/prompt", method: "POST", body: body, token: token) else {
             throw NetworkError.invalidURL
         }
