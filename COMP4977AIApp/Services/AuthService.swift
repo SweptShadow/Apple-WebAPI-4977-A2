@@ -2,6 +2,7 @@ import Foundation
 import Combine
 
 class AuthService: ObservableObject {
+    static let shared = AuthService()
     
     @Published var isAuthenticated = false
     @Published var currentUser: User?
@@ -9,7 +10,7 @@ class AuthService: ObservableObject {
     
     private let networkService = NetworkService.shared
     
-    init() {
+    private init() {
         print("[DEBUG] AuthService init: \(Unmanaged.passUnretained(self).toOpaque())")
         // Check if user is already logged in
         checkAuthStatus()

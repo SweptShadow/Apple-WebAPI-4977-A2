@@ -5,12 +5,6 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            // Debug info
-            Text("Debug: isAuthenticated = \(authService.isAuthenticated)")
-                .font(.caption)
-                .foregroundColor(.gray)
-                .padding(.top)
-            
             if authService.isAuthenticated {
                 MainTabView()
             } else {
@@ -28,5 +22,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environmentObject(AuthService())
+        .environmentObject(AuthService.shared)
 }
