@@ -100,5 +100,5 @@ struct RegisterView: View {
 
 #Preview {
     RegisterView()
-        .environmentObject(AuthService())
+        .environmentObject(AuthService.shared)
 }

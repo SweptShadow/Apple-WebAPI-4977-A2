@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     
-    @StateObject private var authService = AuthService()
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         

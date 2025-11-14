@@ -87,7 +87,7 @@ struct ProfileInfoRow: View {
 #Preview {
     ProfileView()
         .environmentObject({
-            let service = AuthService()
+            let service = AuthService.shared
             service.currentUser = User(firstName: "John", lastName: "Doe", email: "john.doe@example.com")
             return service
         }())

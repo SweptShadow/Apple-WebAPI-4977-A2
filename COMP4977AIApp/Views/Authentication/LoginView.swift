@@ -86,5 +86,5 @@ struct LoginView: View {
 
 #Preview {
     LoginView()
-        .environmentObject(AuthService())
+        .environmentObject(AuthService.shared)
 }
