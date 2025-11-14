@@ -132,9 +132,10 @@ struct AIResponse: Codable {
     let model: String?
     let domain: String?
     
+    // Backend sends lowercase property names
     enum CodingKeys: String, CodingKey {
-        case response = "Response"
-        case model = "Model"
-        case domain = "Domain"
+        case response
+        case model
+        case domain
     }
 }

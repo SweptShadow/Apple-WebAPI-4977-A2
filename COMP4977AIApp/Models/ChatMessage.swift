@@ -21,9 +21,3 @@ struct AIRequest: Codable {
     let prompt: String
     let userId: String
 }
-
-struct AIResponse: Codable {
-    
-    let response: String
-    let timestamp: Date
-}
