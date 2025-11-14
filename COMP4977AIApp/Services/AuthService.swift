@@ -43,14 +43,18 @@ class AuthService: ObservableObject {
     }
     
     func login(email: String, password: String) async throws {
+        print("[debug] AuthService: Starting login for \(email)")
         let loginData = UserLogin(email: email, passwordHash: password)
         
         do {
+            print("[debug] AuthService: Calling network service...")
             let response = try await networkService.login(credentials: loginData)
+            print("[debug] AuthService: Received response, token: \(String(response.token.prefix(20)))...")
             
             await MainActor.run {
                 self.isAuthenticated = true
                 self.authToken = response.token
+                print("[debug] AuthService: Set isAuthenticated = true")
                 
                 // Convert backend user data to local User model
                 self.currentUser = User(
@@ -64,10 +68,14 @@ class AuthService: ObservableObject {
                 
                 // Store token securely
                 UserDefaults.standard.set(response.token, forKey: "auth_token")
+                print("[debug] AuthService: Login completed successfully")
             }
             
         } catch {
-            print("Login failed: \(error.localizedDescription)")
+            print("[debug] AuthService login failed: \(error.localizedDescription)")
+            if let networkError = error as? NetworkError {
+                print("[debug] Network error details: \(networkError)")
+            }
             throw error
         }
     }

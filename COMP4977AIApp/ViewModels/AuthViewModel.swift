@@ -59,12 +59,16 @@ class AuthViewModel: ObservableObject {
         
         // Proceed with API call
         do {
+            print("[debug] Attempting login with email: \(email)")
             try await authService.login(email: email, password: password)
+            print("[debug] Login successful!")
             await MainActor.run {
                 isLoading = false
                 clearForm()
             }
         } catch {
+            print("[debug] Login failed with error: \(error)")
+            print("[debug] Error description: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading = false
                 errorMessage = error.localizedDescription
