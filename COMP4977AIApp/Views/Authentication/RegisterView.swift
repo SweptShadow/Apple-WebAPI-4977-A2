@@ -6,114 +6,193 @@ struct RegisterView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = AuthViewModel()
     
+    @State private var showToolbar = false
+    
     var body: some View {
         
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                
+                VStack(spacing: 28) {
                     
-                    // Header
-                    Text("Create Account")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.appOnSurface)
-                        .padding(.top, 20)
+                    // MARK: - Header
+                    VStack(spacing: 8) {
+                        Text("Create Account")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.top, 30)
+                        
+                        Text("Let's get you set up!")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
                     
-                    // Registration Form
-                    VStack(spacing: 16) {
-                        TextField("First Name", text: $viewModel.firstName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    // MARK: - Registration Form
+                    VStack(spacing: 18) {
                         
-                        TextField("Last Name", text: $viewModel.lastName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        glassField("First Name", text: $viewModel.firstName)
+                        glassField("Last Name", text: $viewModel.lastName)
                         
-                        TextField("Email", text: $viewModel.email)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        glassField("Email", text: $viewModel.email)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                         
-                        SecureField("Password", text: $viewModel.password)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        glassSecureField("Password", text: $viewModel.password)
                         
-                        SecureField("Confirm Password", text: $viewModel.confirmPassword)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        glassSecureField("Confirm Password", text: $viewModel.confirmPassword)
                         
-                        // Validation messages
+                        
+                        // MARK: - Validation messages
                         if !viewModel.password.isEmpty && viewModel.password.count < 6 {
                             Text("Password must be at least 6 characters")
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundColor(.red.opacity(0.9))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         
-                        if !viewModel.confirmPassword.isEmpty && viewModel.password != viewModel.confirmPassword {
+                        if !viewModel.confirmPassword.isEmpty &&
+                            viewModel.password != viewModel.confirmPassword {
                             Text("Passwords do not match")
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundColor(.red.opacity(0.9))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         
+                        
+                        // MARK: - Register Button
                         Button(action: {
                             Task {
-                                do {
-                                    await viewModel.register()
-                                    // Only dismiss if registration was successful (no error thrown)
-                                    if !viewModel.showError {
-                                        dismiss()
-                                    }
-                                } catch {
-                                    // Error is already handled in viewModel
-                                }
+                                await viewModel.register()
+                                if !viewModel.showError { dismiss() }
                             }
                         }) {
                             HStack {
                                 if viewModel.isLoading {
                                     ProgressView()
-                                        .scaleEffect(0.8)
+                                        .tint(.white)
                                 }
+                                
                                 Text("Register")
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(viewModel.isRegistrationFormValid ? Color.appPrimary : Color.gray)
+                            .background(
+                                LinearGradient(
+                                    colors: viewModel.isRegistrationFormValid ?
+                                        [Color.purple, Color.blue] :
+                                        [Color.gray.opacity(0.4), Color.gray.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .foregroundColor(.white)
-                            .cornerRadius(8)
+                            .cornerRadius(12)
+                            .shadow(color: .purple.opacity(0.4), radius: 12, y: 5)
                         }
                         .disabled(!viewModel.isRegistrationFormValid || viewModel.isLoading)
+                        
                     }
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, 32)
                     
-                    Spacer()
+                    Spacer(minLength: 40)
                 }
             }
-            .background(Color.appBackground)
+            .background(neonBackground)
             .navigationBarTitleDisplayMode(.inline)
+            
+            // MARK: - Cancel Button (Glowing)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                if showToolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white)
+                                Text("Cancel")
+                                    .foregroundColor(.white)
+                            }
+                        }
                     }
                 }
             }
+            .onAppear {
+                DispatchQueue.main.async {
+                    showToolbar = true
+                }
+            }
+            
             .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK") { }
+                Button("OK") {}
             } message: {
                 Text(viewModel.errorMessage)
             }
-            .alert("Success", isPresented: $viewModel.showSuccess) {
-                Button("OK") {
-                    dismiss()
-                }
-            } message: {
-                Text(viewModel.successMessage)
-            }
         }
         .onAppear {
-            viewModel.setAuthService(authService)
-        }
+                    viewModel.setAuthService(authService)
+            }
     }
 }
+
+
+// MARK: - Glassy TextField Component
+func glassField(_ placeholder: String, text: Binding<String>) -> some View {
+    ZStack(alignment: .leading) {
+        if text.wrappedValue.isEmpty {
+            Text(placeholder)
+                .foregroundColor(.white.opacity(0.45))
+                .padding(.leading, 14)
+        }
+        
+        TextField("", text: text)
+            .foregroundColor(.white)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+    }
+    .background(
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color.white.opacity(0.08))
+            .background(.ultraThinMaterial)
+    )
+    .overlay(
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+    )
+}
+
+
+// MARK: - Glassy SecureField
+func glassSecureField(_ placeholder: String, text: Binding<String>) -> some View {
+    ZStack(alignment: .leading) {
+        if text.wrappedValue.isEmpty {
+            Text(placeholder)
+                .foregroundColor(.white.opacity(0.45))
+                .padding(.leading, 14)
+        }
+        
+        SecureField("", text: text)
+            .foregroundColor(.white)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+    }
+    .background(
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color.white.opacity(0.08))
+            .background(.ultraThinMaterial)
+    )
+    .overlay(
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+    )
+}
+
+
+
+
 
 #Preview {
     RegisterView()
