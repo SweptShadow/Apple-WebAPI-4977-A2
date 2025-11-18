@@ -27,10 +27,11 @@ class AuthService: ObservableObject {
     }
     
     func register(firstName: String, lastName: String, email: String, password: String) async throws {
+        print("[DEBUG] AuthService: Registering user with email: \(email)")
         let registration = UserRegistration(
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
+            firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+            lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
             passwordHash: password
         )
         
@@ -45,7 +46,9 @@ class AuthService: ObservableObject {
     
     func login(email: String, password: String) async throws {
         print("[DEBUG] AuthService: Starting login for \(email)")
-        let loginData = UserLogin(email: email, passwordHash: password)
+        print("[DEBUG] AuthService: Email length: \(email.count), Password length: \(password.count)")
+        print("[DEBUG] AuthService: Email (trimmed): '\(email.trimmingCharacters(in: .whitespacesAndNewlines))'")
+        let loginData = UserLogin(email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), passwordHash: password)
         
         do {
             print("[DEBUG] AuthService: Calling network service...")
