@@ -8,10 +8,9 @@ struct AIView: View {
     var body: some View {
         
         NavigationView {
-            
-            VStack {
+            VStack(spacing: 0) {
                 
-                // Chat Messages
+                // MARK: - Chat Messages
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
@@ -21,129 +20,219 @@ struct AIView: View {
                             }
                             
                             if chatViewModel.isLoading {
-                                HStack {
+                                HStack(spacing: 8) {
                                     ProgressView()
-                                        .scaleEffect(0.8)
-                                    Text("AI is thinking...")
+                                        .tint(.purple)
+                                    Text("AI is thinking…")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.white.opacity(0.6))
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                         .padding(.vertical)
                     }
                     .onChange(of: chatViewModel.messages.count) {
-                        if let lastMessage = chatViewModel.messages.last {
-                            withAnimation {
-                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                            }
+                        if let last = chatViewModel.messages.last {
+                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
                 }
                 
-                // Input Area
-                HStack {
-                    TextField("Ask me anything...", text: $chatViewModel.currentMessage, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(1...4)
-                        .focused($isTextFieldFocused)
-                        .onSubmit {
-                            if !chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                Task {
-                                    await chatViewModel.sendMessage()
-                                }
-                            }
-                        }
-                    
-                    Button(action: {
-                        if !chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Task {
-                                await chatViewModel.sendMessage()
-                                isTextFieldFocused = true // Refocus after sending
-                            }
-                        }
-                    }) {
-                        Image(systemName: "paperplane.fill")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.appPrimary)
-                            .clipShape(Circle())
-                    }
-                    .disabled(chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || chatViewModel.isLoading)
-                }
-                .padding()
+                // MARK: - Bottom Input Bar
+                inputBar
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
             }
-            .background(Color.appBackground)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            .background(backgroundGradient)
             .navigationTitle("AI Assistant")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black.opacity(0.2), for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Clear") {
-                        chatViewModel.clearChat()
+                if !chatViewModel.messages.isEmpty {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Clear") {
+                            chatViewModel.clearChat()
+                        }
+                        .foregroundColor(.purple)
                     }
-                    .disabled(chatViewModel.messages.isEmpty)
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("AI Assistant")
+                        .font(.headline)
+                        .foregroundColor(.white)   // ← stays white ALWAYS
                 }
             }
+            
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+    
+    
+    // MARK: - Input Bar View
+    var inputBar: some View {
+        HStack(spacing: 10) {
+            
+            // TEXTFIELD + GLASS STYLE
+            ZStack(alignment: .leading) {
+                if chatViewModel.currentMessage.isEmpty {
+                    Text("Type here…")
+                        .foregroundColor(.white.opacity(0.45))
+                        .padding(.leading, 14)
+                }
+                
+                TextField("", text: $chatViewModel.currentMessage, axis: .vertical)
+                    .foregroundColor(.white)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 14)
+                    .focused($isTextFieldFocused)
+                    .onSubmit(sendMessageSafely)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white.opacity(0.08))
+                    .background(.ultraThinMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+            
+            // SEND BUTTON
+            Button(action: sendMessageSafely) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.purple, Color.blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 42, height: 42)
+                        .shadow(color: .purple.opacity(0.5), radius: 12, x: 0, y: 4)
+                    
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 26))
+                        .foregroundColor(.white)
+                }
+            }
+            .disabled(chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+    
+    
+    // MARK: - Background Theme
+    var backgroundGradient: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 0.08, green: 0.00, blue: 0.20),
+                Color(red: 0.02, green: 0.00, blue: 0.08),
+                Color.black
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+    
+    
+    // MARK: - Send function
+    func sendMessageSafely() {
+        let trimmed = chatViewModel.currentMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        Task {
+            await chatViewModel.sendMessage()
+            isTextFieldFocused = true
         }
     }
 }
 
+
+
+// MARK: - Chat Bubble Theme
 struct ChatBubbleView: View {
     
     let message: ChatMessage
     
     var body: some View {
-        
         HStack {
-            
             if message.isFromUser {
                 Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(message.content)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppColors.userMessageBackground)
-                        .foregroundColor(AppColors.messageText)
-                        .cornerRadius(16)
-                        .frame(maxWidth: .infinity * 0.75, alignment: .trailing)
-                    
-                    Text(ValidationUtils.formatDateTime(message.timestamp))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                userBubble
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(markdownToAttributedString(message.content))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(AppColors.aiMessageBackground)
-                        .foregroundColor(AppColors.aiMessageText)
-                        .cornerRadius(16)
-                        .frame(maxWidth: .infinity * 0.75, alignment: .leading)
-                    
-                    Text(ValidationUtils.formatDateTime(message.timestamp))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                aiBubble
                 Spacer()
             }
         }
         .padding(.horizontal)
     }
+    
+    // USER BUBBLE
+    var userBubble: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(message.content)
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    LinearGradient(
+                        colors: [Color.purple.opacity(0.35),
+                                 Color.blue.opacity(0.25)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(16)
+                .shadow(color: .purple.opacity(0.25), radius: 10)
+                .frame(maxWidth: UIScreen.main.bounds.width * 0.75, alignment: .trailing)
+            
+            timestamp
+        }
+    }
+    
+    // AI BUBBLE
+    var aiBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(markdownToAttributedString(message.content))
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.05))
+                        .background(.ultraThinMaterial)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+                .frame(maxWidth: UIScreen.main.bounds.width * 0.75, alignment: .leading)
+            
+            timestamp
+        }
+    }
+    
+    var timestamp: some View {
+        Text(ValidationUtils.formatDateTime(message.timestamp))
+            .font(.caption2)
+            .foregroundColor(.white.opacity(0.4))
+    }
 }
 
-// Helper function to convert simple markdown to AttributedString
+
+// MARK: - Markdown Parser
 func markdownToAttributedString(_ text: String) -> AttributedString {
     do {
-        // Configure markdown options to preserve spacing and formatting
         var options = AttributedString.MarkdownParsingOptions()
         options.interpretedSyntax = .inlineOnlyPreservingWhitespace
-        
-        // SwiftUI supports markdown natively in iOS 15+
         return try AttributedString(markdown: text, options: options)
     } catch {
-        // Fallback to plain text if markdown parsing fails
         return AttributedString(text)
     }
 }
