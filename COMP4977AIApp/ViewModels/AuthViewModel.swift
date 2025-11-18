@@ -12,6 +12,8 @@ class AuthViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage = ""
     @Published var showError = false
+    @Published var successMessage = ""
+    @Published var showSuccess = false
     
     var authService: AuthService?
     
@@ -90,6 +92,8 @@ class AuthViewModel: ObservableObject {
             isLoading = true
             errorMessage = ""
             showError = false
+            successMessage = ""
+            showSuccess = false
         }
         
         // Validate input first
@@ -109,15 +113,20 @@ class AuthViewModel: ObservableObject {
         
         // Proceed with API call
         do {
+            print("[DEBUG] Attempting registration with email: \(email)")
             guard let authService = authService else {
                 throw NetworkError.authenticationFailed
             }
             try await authService.register(firstName: firstName, lastName: lastName, email: email, password: password)
+            print("[DEBUG] Registration successful!")
             await MainActor.run {
                 isLoading = false
+                successMessage = "Account created successfully! You can now log in."
+                showSuccess = true
                 clearForm()
             }
         } catch {
+            print("[ERROR] Registration failed: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading = false
                 errorMessage = error.localizedDescription

@@ -21,20 +21,25 @@ class NetworkService: ObservableObject {
     // MARK: - Authentication Methods
     
     func register(user: UserRegistration) async throws -> String {
+        print("[DEBUG] NetworkService: Registering user with email: \(user.email)")
         guard let request = createRequest(for: "auth/register", method: "POST", body: try JSONEncoder().encode(user)) else {
             throw NetworkError.invalidURL
         }
         
         let response: RegistrationResponse = try await performRequest(request, responseType: RegistrationResponse.self)
+        print("[DEBUG] NetworkService: Registration response: \(response.message)")
         return response.message
     }
     
     func login(credentials: UserLogin) async throws -> AuthResponse {
+        print("[DEBUG] NetworkService: Login attempt for email: \(credentials.email)")
         guard let request = createRequest(for: "auth/login", method: "POST", body: try JSONEncoder().encode(credentials)) else {
             throw NetworkError.invalidURL
         }
         
-        return try await performRequest(request, responseType: AuthResponse.self)
+        let response = try await performRequest(request, responseType: AuthResponse.self)
+        print("[DEBUG] NetworkService: Login successful, received token")
+        return response
     }
     
     func sendAIPrompt(prompt: String, token: String) async throws -> AIResponse {

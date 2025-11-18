@@ -55,8 +55,15 @@ struct RegisterView: View {
                         
                         Button(action: {
                             Task {
-                                await viewModel.register()
-                                dismiss()
+                                do {
+                                    await viewModel.register()
+                                    // Only dismiss if registration was successful (no error thrown)
+                                    if !viewModel.showError {
+                                        dismiss()
+                                    }
+                                } catch {
+                                    // Error is already handled in viewModel
+                                }
                             }
                         }) {
                             HStack {
@@ -94,6 +101,16 @@ struct RegisterView: View {
             } message: {
                 Text(viewModel.errorMessage)
             }
+            .alert("Success", isPresented: $viewModel.showSuccess) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text(viewModel.successMessage)
+            }
+        }
+        .onAppear {
+            viewModel.setAuthService(authService)
         }
     }
 }
